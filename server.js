@@ -42,7 +42,6 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
-
 app.all('*', function (req, res, next) {
     log(req.url);
     if (req.query.peer_id && peers[req.query.peer_id]) {
