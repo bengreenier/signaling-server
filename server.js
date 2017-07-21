@@ -1,6 +1,8 @@
 
 var express = require('express');
 var bodyParser = require('body-parser');
+var helmet = require('helmet');
+var cors = require('cors');
 var http = require('http');
 process.env.APPINSIGHTS_INSTRUMENTATIONKEY = process.env.APPINSIGHTS_INSTRUMENTATIONKEY || "NO_APPLICATION_INSIGHTS";
 appInsights = require("applicationinsights");
@@ -12,10 +14,8 @@ var peers = {};
 var connectionsToClean = new Set();
 
 var port = process.env.PORT || 3000;
-
-
+var allowedOrigins = (process.env.CORS_ORIGINS || '*').split(',')
 var intervalToCleanConnections = process.env.INTERVAL || 10000;
-
 
 if (process.env.ENABLE_LOGGING_TO_FILE){
     const fs = require('fs')
@@ -35,6 +35,10 @@ var httpServer = http.createServer(app);
 
 httpServer.keepAliveTimeout = 120000;
 
+app.use(helmet())
+app.use(cors({
+    origin: (origin, cb) => cb(null, allowedOrigins.indexOf('*') !== -1 || allowedOrigins.indexOf(origin) !== -1)
+}))
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
@@ -64,7 +68,6 @@ function cleanPeerList() {
 
 setInterval(cleanPeerList, intervalToCleanConnections);
 
-
 app.get('/sign_in', function (req, res) {
     var client = {};
     log(req.url);
@@ -87,7 +90,6 @@ app.get('/sign_in', function (req, res) {
     res.send(formatListOfPeers(newPeer));
     notifyOtherPeers(newPeer);
 })
-
 
 app.post('/message', function (req, res) {
     log(req.url);
@@ -130,7 +132,6 @@ app.get('/sign_out', function (req, res) {
     res.send("Ok");
 })
 
-
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
@@ -166,7 +167,6 @@ app.get('/wait', function (req, res) {
     });
 
 })
-
 
 function formatListOfPeers(peer) {
     var result = peer.name + "," + peer.id + ",1\n";
