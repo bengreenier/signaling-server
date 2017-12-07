@@ -216,7 +216,7 @@ function sendMessageToPeer(peer, payload, fromId) {
 
 function isPeerCandidate(peer, otherPeer) {
     return (otherPeer.id != peer.id && // filter self
-        !otherPeer.roomPeer && // filter peers in 'rooms'
+        //!otherPeer.roomPeer && // filter peers in 'rooms'
         otherPeer.peerType != peer.peerType) // filter out peers of same type
 }
 
