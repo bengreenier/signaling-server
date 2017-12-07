@@ -41,31 +41,30 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
+// app.all('*', function (req, res, next) {
+//     log(req.url);
+//     if (req.query.peer_id && peers[req.query.peer_id]) {
+//         peers[req.query.peer_id].lastSeenActive = (new Date()).getTime();
+//     }
+//     next();
+// });
 
-app.all('*', function (req, res, next) {
-    log(req.url);
-    if (req.query.peer_id && peers[req.query.peer_id]) {
-        peers[req.query.peer_id].lastSeenActive = (new Date()).getTime();
-    }
-    next();
-});
+// function cleanPeerList() {
+//     for (peerId in peers) {
+//         var peer = peers[peerId]
+//         if (peer.lastSeenActive + intervalToCleanConnections < new Date()) {
+//             log("Deleting peer " + peerId);
+//             if (peer.roomPeer) {
+//                 log("Peer " + peerId + " crashed. Making " + peer.roomPeer.id + " available")
+//                 peer.roomPeer.roomPeer = null;
+//             }
+//             delete peers[peerId];
+//             delete peers[peerId];
+//         }
+//     }
+// }
 
-function cleanPeerList() {
-    for (peerId in peers) {
-        var peer = peers[peerId]
-        if (peer.lastSeenActive + intervalToCleanConnections < new Date()) {
-            log("Deleting peer " + peerId);
-            if (peer.roomPeer) {
-                log("Peer " + peerId + " crashed. Making " + peer.roomPeer.id + " available")
-                peer.roomPeer.roomPeer = null;
-            }
-            delete peers[peerId];
-            delete peers[peerId];
-        }
-    }
-}
-
-setInterval(cleanPeerList, intervalToCleanConnections);
+// setInterval(cleanPeerList, intervalToCleanConnections);
 
 
 app.get('/sign_in', function (req, res) {
@@ -83,7 +82,7 @@ app.get('/sign_in', function (req, res) {
     if (newPeer.name.indexOf("renderingserver_") != -1) {
         newPeer.peerType = 'server';
     }
-    newPeer.timestampOfLastHeartbeat = (new Date()).getTime();
+    //newPeer.timestampOfLastHeartbeat = (new Date()).getTime();
     peers[newPeer.id] = newPeer;
 
     res.set('Pragma', newPeer.id);
@@ -136,10 +135,6 @@ app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
 
-    if (connectionsToClean.has(peerId)) {
-        connectionsToClean.delete(peerId)
-    }
-
     if (peers[peerId]) {
         var socket = {};
         socket.waitPeer = peers[peerId];
@@ -148,24 +143,6 @@ app.get('/wait', function (req, res) {
 
         sendMessageToPeer(peers[peerId], null, null);
     }
-
-    req.on('close', function () {
-        connectionsToClean.add(peerId);
-        setTimeout(function () {
-            connectionsToClean.forEach(function (peerId) {
-                if (peers[peerId]) {
-                    if (peers[peerId].roomPeer) {
-                        log("Peer " + peerId + " crashed. Making " + peers[peerId].roomPeer.id + " available")
-                        peers[peerId].roomPeer.roomPeer = null;
-                    }
-                    log("Connection close. Deleteting peer " + peerId);
-                    delete peers[peerId];
-                }
-            });
-            connectionsToClean = new Set();
-        }, 3000);
-    });
-
 })
 
 function formatListOfPeers(peer) {
